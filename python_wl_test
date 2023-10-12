@@ -1,0 +1,215 @@
+# Date: 03/05/2019
+# Aim: analysis of winston-lutz test using cone applicator
+# Measurement conditions: MV-images with 20MU, 20mm cone and ballbearing phantom
+# to do list: test with different cones, MUs, MaxHD phantom 
+import os
+from pylab import *
+import numpy as np
+from glob import glob
+from matplotlib import *
+import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
+import matplotlib.mlab as mlab
+import scipy.misc
+from scipy import ndimage
+from math import sqrt
+from IPython.display import display, Markdown
+import imageio
+import pandas as pd
+import pydicom
+import datetime
+import time
+from PIL import Image, ImageDraw
+np.__version__
+'1.15.1'
+if pydicom.__version__ != '1.2.0':
+    !pip install pydicom==1.2.0
+    raise(ImportError("Please restart kernel to use pydicom 1.2.0"))
+# Input parameters
+​
+#data root
+data_dir = r'P:\Staff Folders\Felix\SRS\srs_film_dosimetry\gamma_analysis\patient_example'
+​
+# name of images
+monaco_dose_13='dose_1_3.png'
+monaco_dose_24='dose_2_4.png'
+film_13='film_1_3.png'
+film_24='film_2_4.png'
+​
+​
+# run timer
+import time
+start_time = time.time()
+# Definitions
+​
+​
+​
+# data path
+data_dose_1_3 = os.path.join(data_dir, monaco_dose_13)
+data_dose_2_4 = os.path.join(data_dir, monaco_dose_24)
+data_film_1_3 = os.path.join(data_dir, film_13)
+data_film_2_4 = os.path.join(data_dir, film_24)
+filelist_dose=[data_dose_1_3,data_dose_2_4]
+filelist_film=[data_film_1_3,data_film_2_4]
+print(filelist_dose)
+print(filelist_film)
+['P:\\Staff Folders\\Felix\\SRS\\srs_film_dosimetry\\gamma_analysis\\patient_example\\dose_1_3.png', 'P:\\Staff Folders\\Felix\\SRS\\srs_film_dosimetry\\gamma_analysis\\patient_example\\dose_2_4.png']
+['P:\\Staff Folders\\Felix\\SRS\\srs_film_dosimetry\\gamma_analysis\\patient_example\\film_1_3.png', 'P:\\Staff Folders\\Felix\\SRS\\srs_film_dosimetry\\gamma_analysis\\patient_example\\film_2_4.png']
+# get profiles and match them
+​
+imageList=[]
+​
+# monaco dose
+for x in filelist_dose:
+    
+    image = imageio.imread(x) # read image
+    
+    row, col = image.shape
+    #row, col = image.shape
+    x_range=range(row)
+    y_range=range(col)
+    #image = imag.astype('float')
+    
+# get average of white pixel
+    x0, y0 = row/2, y_range[1] # pixel
+    x1, y1 = row/2, y_range[-1] #
+    num = 1000
+    x, y = np.linspace(x0, x1, num), np.linspace(y0, y1, num)
+    zi1 = scipy.ndimage.map_coordinates(np.transpose(image), np.vstack((x,y))) 
+​
+    x2, y2 = x_range[1], col/2 # pixel
+    x3, y3 = x_range[-1], col/2
+    num = 1000
+    x, y = np.linspace(x2, x3, num), np.linspace(y2, y3, num)
+    zi2 = scipy.ndimage.map_coordinates(np.transpose(image), np.vstack((x,y)))
+​
+    
+    num_zi1=mean(zi1)
+    num_zi2=mean(zi2)   
+    
+    
+    #-- Plot...
+    fig, axes = plt.subplots(nrows=3)
+    axes[0].imshow(image)
+    axes[0].plot([x0, x1], [y0, y1], 'ro-')
+    axes[0].plot([x2, x3], [y2, y3], 'wo-')
+    axes[0].axis('on')
+    axes[1].plot(zi1)
+    axes[2].plot(zi2)
+    plt.show()
+​
+#film data
+# png has 4 channels: [0] is red channel with highest contrast for our purposes
+for x in filelist_film:
+    
+    image = imageio.imread(x) # read image
+    red_image = image[:,:,0]
+    row, col,channel = image.shape
+    #row, col = image.shape
+    x_range=range(row)
+    y_range=range(col)
+    #image = imag.astype('float')
+    
+# get average of white pixel
+    x0, y0 = row/2, y_range[1] # pixel
+    x1, y1 = row/2, y_range[-1] #
+    num = 1000
+    x, y = np.linspace(x0, x1, num), np.linspace(y0, y1, num)
+    zi1 = scipy.ndimage.map_coordinates(np.transpose(red_image), np.vstack((x,y))) 
+​
+    x2, y2 = x_range[1], col/2 # pixel
+    x3, y3 = x_range[-1], col/2
+    num = 1000
+    x, y = np.linspace(x2, x3, num), np.linspace(y2, y3, num)
+    zi2 = scipy.ndimage.map_coordinates(np.transpose(red_image), np.vstack((x,y)))
+​
+    
+    num_zi1=mean(zi1)
+    num_zi2=mean(zi2)   
+    
+    
+    #-- Plot...
+    fig, axes = plt.subplots(nrows=3)
+    axes[0].imshow(red_image)
+    axes[0].plot([x0, x1], [y0, y1], 'ro-')
+    axes[0].plot([x2, x3], [y2, y3], 'wo-')
+    axes[0].axis('on')
+    axes[1].plot(zi1)
+    axes[2].plot(zi2)
+    plt.show()    
+    
+    
+    print(red_image)
+    
+#     num_all=[num_zi1,num_zi2,num_zi3,num_zi4]
+#     avg_whitepixel=mean(num_all)
+#     treshold_cut_off_white_pixel=avg_whitepixel-sub_from_avg_white_pixel
+#     image[image>treshold_cut_off_white_pixel]=0
+#     imageList.append(image)
+ 
+#print data
+    image1 = imageio.imread(filelist[iii]) 
+    img=image1.copy()
+    #fig = plt.figure()
+    fig, ((ax11, ax12)) = plt.subplots(1, 2, figsize=(12,15))
+    
+    title_text = (
+        "Beam: {} | Gantry: {:.0f} | Collimator: {:.0f} | TurnTable: {:.0f} | Displacement in mm (x, y, xy): ({:.2f}, {:.2f}, {:.2f})".format(
+            beam[iii], gantry[iii], collimator[iii], turntable[iii], dist_mmx, dist_mmy,dist_mm1)
+    )
+    fig.suptitle(title_text, fontsize=16)
+    #ax = fig.add_subplot(1,1,1)
+    
+    ax11.imshow(img)
+    # Major ticks every 20, minor ticks every 5
+    major_ticks = np.arange(0, 1000, 200)
+    minor_ticks = np.arange(0, 1000, 50)
+    ax11.set_xticks(major_ticks)
+    ax11.set_xticks(minor_ticks, minor=True)
+    ax11.set_yticks(major_ticks)
+    ax11.set_yticks(minor_ticks, minor=True)
+    # And a corresponding grid
+    ax11.grid(which='both')
+    #ax.plot(xx2, yy2, ".b")
+    #ax.annotate("bb pixel intensity", xx2, yy2)
+    #plt.show()
+    ax11.set_title("original image")
+      
+    ax12.imshow(img)
+    # Major ticks every 20, minor ticks every 5
+    major_ticks = np.arange(0, 1000, 200)
+    minor_ticks = np.arange(0, 1000, 50)
+    ax12.set_xticks(major_ticks)
+    ax12.set_xticks(minor_ticks, minor=True)
+    ax12.set_yticks(major_ticks)
+    ax12.set_yticks(minor_ticks, minor=True)
+    # And a corresponding grid
+    ax12.grid(which='both')
+    ax12.plot(avg_cenx,avg_ceny, ".w")
+    ax12.plot(xx1, yy1, ".r")
+    ax12.set_title("white dot corresponds to the centre of cone and red dot to the centre of bb")
+    
+# save figures as images    
+    file_name = "{}_G{:+04.0f}_C{:+04.0f}_TT{:+03.0f}".format(
+        beam[iii], gantry[iii], collimator[iii], turntable[iii])
+    
+    file_path = os.path.join(data_root, file_name)
+    
+    plt.savefig(file_path) 
+    
+    plt.show()
+​
+# save output data       
+    cone_centre=(avg_cenx,avg_ceny)
+    cone_centres.append(cone_centre)
+    bb_centre=(xx1,yy1)    
+    bb_centres.append(bb_centre)
+    displacement=(dist_mmx,dist_mmy,dist_mm1)
+    displacements.append(displacement)
+  File "<ipython-input-268-77aa185337f5>", line 2
+    image1 = imageio.imread(filelist[iii])
+    ^
+IndentationError: unexpected indent
+​
+# timer ends
+print("--- %s seconds ---" % (time.time() - start_time))
